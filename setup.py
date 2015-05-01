@@ -8,8 +8,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
-requires = []
-requires_test = ['pytest']
+deps = []
+deps_test = [
+    'pytest>=2.7.0',
+    'mock>=1.0.1']
 
 entry_points = {}
 
@@ -31,7 +33,7 @@ class PyTest(TestCommand):
 
 setup(
     name='libpy',
-    version='0.1',
+    version='0.2rc0',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
         'Programming Language :: Python',
@@ -41,8 +43,8 @@ setup(
     packages=find_packages(),
     entry_points=entry_points,
 
-    install_requires=requires,
-    tests_require=requires_test,
+    install_requires=deps,
+    tests_require=deps_test,
 
     include_package_data=True,
     zip_safe=True,
