@@ -33,7 +33,7 @@ class PyTest(TestCommand):
 
 setup(
     name='libpy',
-    version='0.2rc0',
+    version='0.2rc1',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
         'Programming Language :: Python',

@@ -59,3 +59,60 @@ class TestLazyProperty(object):
         del obj.attr0
         assert obj.attr0 == 'test'
         assert factory.call_count == 2
+
+
+class TestProxy(object):
+    def test(self):
+        proxy = libpy.cache.Proxy(ProxyTarget())
+
+        assert isinstance(proxy, libpy.cache.Proxy)
+        assert proxy.a == mock.sentinel.proxy_target_a
+        assert proxy.b == mock.sentinel.proxy_target_b
+
+        with pytest.raises(AttributeError):
+            _ = proxy.X
+
+        with pytest.raises(AttributeError):
+            _ = proxy._c
+
+    def test_keep_value(self):
+        target = ProxyTarget()
+        proxy = libpy.cache.Proxy(target)
+
+        assert proxy.b == mock.sentinel.proxy_target_b
+
+        delattr(target, 'b')
+        assert not hasattr(target, 'b')
+
+        assert proxy.b == mock.sentinel.proxy_target_b
+
+        delattr(proxy, 'b')
+        with pytest.raises(AttributeError):
+            _ = proxy.b
+
+    def test_update(self):
+        target = ProxyTarget()
+        proxy = libpy.cache.Proxy(target)
+
+        assert proxy.a == mock.sentinel.proxy_target_a
+        target.a = 'new_value_for_a'
+        assert proxy.a == mock.sentinel.proxy_target_a
+
+        delattr(proxy, 'a')
+        assert proxy.a == 'new_value_for_a'
+
+    def test_override(self):
+        proxy = libpy.cache.Proxy(ProxyTarget(), a='override_a')
+
+        assert proxy.a == 'override_a'
+        assert proxy.b == mock.sentinel.proxy_target_b
+        proxy.b = 'dynamic_override_b'
+        assert proxy.b == 'dynamic_override_b'
+
+
+class ProxyTarget(object):
+    a = mock.sentinel.proxy_target_a
+
+    def __init__(self):
+        self.b = mock.sentinel.proxy_target_b
+        self._c = mock.sentinel.proxy_target_c
