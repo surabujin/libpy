@@ -9,26 +9,11 @@ import libpy
 import libpy.cache
 
 
-class Subject(object):
-    @libpy.lazy_property
-    def attr0(self):
-        return 'dummy'
-
-
-@pytest.fixture
-def factory():
-    return mock.Mock(return_value='test')
-
-
-@pytest.fixture
-def obj(monkeypatch, factory):
-    monkeypatch.setattr(Subject.attr0, '_factory', factory)
-    return Subject()
-
-
 class TestLazyProperty(object):
-    def test_generic(self, obj, factory):
-        assert isinstance(Subject.attr0, libpy.cache.LazyProperty)
+    def test(self, lazy_property_data):
+        obj, fake_factory = lazy_property_data
+
+        assert isinstance(LazyPropertySubject.attr0, libpy.cache.LazyProperty)
         assert 'attr0' not in vars(obj)
 
         # evaluate property on first call
@@ -36,15 +21,18 @@ class TestLazyProperty(object):
         # property should not be called on second request
         assert 'test' == obj.attr0
 
-        factory.assert_called_once_with(obj)
+        fake_factory.assert_called_once_with(obj)
 
-    def test_manual_fill(self, obj, factory):
+    def test_manual_fill(self, lazy_property_data):
+        obj, fake_factory = lazy_property_data
         obj.attr0 = 'test1'
 
         assert obj.attr0 == 'test1'
-        assert not factory.called
+        assert not fake_factory.called
 
-    def test_clear(self, obj):
+    def test_clear(self, lazy_property_data):
+        obj, _ = lazy_property_data
+
         with pytest.raises(AttributeError):
             del obj.attr0
 
@@ -52,13 +40,15 @@ class TestLazyProperty(object):
         del obj.attr0
         assert 'attr0' not in vars(obj)
 
-    def test_recalculate(self, obj, factory):
+    def test_recalculate(self, lazy_property_data):
+        obj, fake_factory = lazy_property_data
+
         assert obj.attr0 == 'test'
-        assert factory.call_count == 1
+        assert fake_factory.call_count == 1
 
         del obj.attr0
         assert obj.attr0 == 'test'
-        assert factory.call_count == 2
+        assert fake_factory.call_count == 2
 
 
 class TestProxy(object):
@@ -108,6 +98,19 @@ class TestProxy(object):
         assert proxy.b == mock.sentinel.proxy_target_b
         proxy.b = 'dynamic_override_b'
         assert proxy.b == 'dynamic_override_b'
+
+
+@pytest.fixture
+def lazy_property_data(monkeypatch):
+    fake_factory = mock.Mock(return_value='test')
+    monkeypatch.setattr(LazyPropertySubject.attr0, '_factory', fake_factory)
+    return LazyPropertySubject(), fake_factory
+
+
+class LazyPropertySubject(object):
+    @libpy.lazy_property
+    def attr0(self):
+        return 'dummy'
 
 
 class ProxyTarget(object):
