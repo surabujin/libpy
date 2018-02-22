@@ -1,33 +1,36 @@
 # -*- coding:utf-8 -*-
 
-from __future__ import absolute_import, unicode_literals, print_function
+import collections
 
-import functools
 import weakref
+from .root import AbstractDescriptor
 
 
-class LazyProperty(object):
-    def __init__(self, factory):
-        self._factory = factory
+_LazyDescriptor = collections.namedtuple('_LazyDescriptor', ('attr', 'name'))
 
-        functools.update_wrapper(self, self._factory)
 
+class LazyAttr(AbstractDescriptor):
     def __get__(self, instance, owner):
         if instance is None:
             return self
 
-        try:
-            get_factory = self._factory.__get__
-        except AttributeError:
-            result = self._factory(instance)
-        else:
-            bound_factory = get_factory(instance, owner)
-            result = bound_factory()
-
-        setattr(instance, self.__name__, result)
+        target = _LazyDescriptor(self, self._resolve_name(owner))
+        result = instance.lazy_attr(target)
+        self._save(target.name, instance, result)
 
         return result
 
+    @staticmethod
+    def _save(name, instance, result):
+        setattr(instance, name, result)
+
+
+class LazyMixin(object):
+    def lazy_attr(self, target):
+        raise TypeError(
+            'Object {!r} have failed to resolve lazy attribute {!r}'.format(
+                self, target.name))
+ 
 
 class Proxy(object):
     def __init__(self, target, **init):
