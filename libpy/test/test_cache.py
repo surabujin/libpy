@@ -2,7 +2,6 @@
 
 from __future__ import absolute_import, unicode_literals, print_function
 
-import mock
 import pytest
 
 from libpy import cache
@@ -44,11 +43,3 @@ class LazyPropertySubject(cache.LazyMixin, object):
         else:
             value = super().lazy_attr(target)
         return value
-
-
-class ProxyTarget(object):
-    a = mock.sentinel.proxy_target_a
-
-    def __init__(self):
-        self.b = mock.sentinel.proxy_target_b
-        self._c = mock.sentinel.proxy_target_c
