@@ -4,97 +4,71 @@ from __future__ import absolute_import, unicode_literals, print_function
 
 from itertools import repeat
 
+from ._root import Alias
+from ._root import AttrAdapter
+from ._root import ItemAdapter
 
-class _ProxyAttr(object):
-    def __init__(self, item, attr='args'):
-        self.item = item
-        self.attr = attr
 
-    def __get__(self, instance, owner):
-        if not instance:
-            return self
+class ArgsAdapter(ItemAdapter):
+    def __init__(self, name):
+        if not isinstance(name, int):
+            raise TypeError('{} can use ony number as field name'.format(
+                type(self)))
+        super().__init__(name)
 
-        attr = getattr(instance, self.attr)
+    def read(self, target):
         try:
-            value = attr[self.item]
+            value = target[self.name]
         except IndexError:
-            name = instance.idx_to_attr(self.item)
-            raise AttributeError('\'{}\' object has no attribute \'{}\''.format(owner.__name__, name))
+            value = None
         return value
 
-    def __set__(self, instance, value):
-        name = instance.idx_to_attr(self.item)
-        instance.update(name, value)
+    def write(self, target, value):
+        args = list(target)
+        if len(args) <= self.name:
+            args.extend(repeat(None, self.name - len(args) + 1))
+        args[self.name] = value
+
+        return tuple(args)
 
 
-class _ExcMeta(type):
-    def __new__(mcs, name, bases, dict_):
-        cls = super(_ExcMeta, mcs).__new__(mcs, name, bases, dict_)
-
-        dfl = dict()
-        for i, a in enumerate(cls.attr_map):
-            assert isinstance(a, (str, unicode))
-            get = _ProxyAttr(i)
-            try:
-                dfl[a] = getattr(cls, a)
-            except AttributeError:
-                pass
-            setattr(cls, a, get)
-
-        cls.merge_defaults(dfl)
-        return cls
+def make_arg_alias(index):
+    return Alias(
+        AttrAdapter('args'),
+        ArgsAdapter(index))
 
 
-class CommonException(Exception):
-    __metaclass__ = _ExcMeta
-
-    attr_map = tuple()
-    _dfl = tuple()
-
-    @classmethod
-    def merge_defaults(cls, dfl):
-        curr = dict(cls._dfl)
-        for k, v in dfl.tems():
-            curr.setdefault(k, v)
-        cls._dfl = tuple(curr.items())
+class AbstractException(Exception):
+    defaults = ()
 
     def __init__(self, *a, **kwa):
-        Exception.__init__(self, *a)
+        args = a
+        if len(args) < len(self.defaults):
+            args = args + self.defaults[len(args):]
+            args = args[:len(self.defaults)]
+        super().__init__(*args)
 
-        for n, v in self._dfl:
-            try:
-                if getattr(self, n):
-                    continue
-            except AttributeError:
-                pass
-            self.update(n, v)
-        for n, v in kwa.items():
-            self.update(n, v)
-
-    def update(self, fld, value):
-        try:
-            idx = self.attr_map.index(fld)
-        except ValueError:
-            setattr(self, fld, value)
-            return
-
-        a = self.args
-        a = list(a)
-        if len(a) <= idx:
-            a.extend(repeat(None, idx - len(a) + 1))
-        a[idx] = value
-
-        # noinspection PyPropertyAccess
-        self.args = tuple(a)
-
-    def idx_to_attr(self, idx):
-        return self.attr_map[idx]
+        for attr, value in kwa.items():
+            setattr(self, attr, value)
 
 
-class CommonCtrl(CommonException):
+class AbstractCtrl(AbstractException):
     pass
 
 
-class CommonError(CommonException):
-    attr_map = ('message',)
-    message = 'Unidentified error'
+class AbstractError(AbstractException):
+    defaults = ('Abstract error being used', )
+    message = make_arg_alias(0)
+
+
+class UnresolvedLazyAttr(AbstractError):
+    owner = make_arg_alias(0)
+    target = make_arg_alias(1)
+
+    def __init__(self, owner, target):
+        super(UnresolvedLazyAttr, self).__init__(owner, target)
+
+    @property
+    def message(self):
+        return 'Object {!r} have failed to resolve lazy attribute {!r}'.format(
+            self.owner, self.target.name)

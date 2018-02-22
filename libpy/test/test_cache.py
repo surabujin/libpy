@@ -5,6 +5,7 @@ from __future__ import absolute_import, unicode_literals, print_function
 import pytest
 
 from libpy import cache
+from libpy import exc
 
 
 class TestLazyProperty(object):
@@ -15,7 +16,7 @@ class TestLazyProperty(object):
         assert a.first == 'FIRST'
         assert a.called == 1  # value must be cached, so no second call
 
-        with pytest.raises(TypeError):
+        with pytest.raises(exc.UnresolvedLazyAttr):
             assert a.second is None
 
         assert a.called == 2

@@ -2,6 +2,7 @@
 
 import collections
 
+from . import exc
 from .root import AbstractDescriptor
 
 
@@ -26,6 +27,4 @@ class LazyAttr(AbstractDescriptor):
 
 class LazyMixin(object):
     def lazy_attr(self, target):
-        raise TypeError(
-            'Object {!r} have failed to resolve lazy attribute {!r}'.format(
-                self, target.name))
+        raise exc.UnresolvedLazyAttr(self, target)
