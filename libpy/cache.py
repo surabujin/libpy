@@ -32,7 +32,7 @@ class LazyProperty(object):
 class Proxy(object):
     def __init__(self, target, **init):
         _update_object_mapping(self, target)
-        for attr, val in init.iteritems():
+        for attr, val in init.items():
             setattr(self, attr, val)
 
     def __getattr__(self, attr):

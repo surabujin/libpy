@@ -54,7 +54,7 @@ class CommonException(Exception):
     @classmethod
     def merge_defaults(cls, dfl):
         curr = dict(cls._dfl)
-        for k, v in dfl.iteritems():
+        for k, v in dfl.tems():
             curr.setdefault(k, v)
         cls._dfl = tuple(curr.items())
 
@@ -68,7 +68,7 @@ class CommonException(Exception):
             except AttributeError:
                 pass
             self.update(n, v)
-        for n, v in kwa.iteritems():
+        for n, v in kwa.items():
             self.update(n, v)
 
     def update(self, fld, value):

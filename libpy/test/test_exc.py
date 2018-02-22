@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 
-from itertools import izip
-
 import pytest
 
 from libpy import exc
@@ -22,7 +20,7 @@ def test_proxy_access():
 def _validate_subj_attrs(subj, expect):
     attr = ('attr0', 'attr1')
     assert subj.args == expect
-    for attr, value in izip(attr, expect):
+    for attr, value in zip(attr, expect):
         assert getattr(subj, attr) == value
 
 
